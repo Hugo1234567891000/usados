@@ -168,6 +168,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await loadProfile(data.user.id);
       setShowAuthModal(false);
 
+      const channel = new BroadcastChannel('supabase-auth-sync');
+      channel.postMessage({ type: 'session-changed', event: 'SIGNED_IN' });
+      channel.close();
+
       if (redirectAfterLogin) {
         navigate(redirectAfterLogin);
         setRedirectAfterLogin(null);
@@ -181,6 +185,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
     setSession(null);
     setIsAuthenticated(false);
+
+    const channel = new BroadcastChannel('supabase-auth-sync');
+    channel.postMessage({ type: 'session-changed', event: 'SIGNED_OUT' });
+    channel.close();
+
     navigate('/');
   }, [navigate]);
 

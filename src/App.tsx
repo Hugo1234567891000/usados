@@ -21,6 +21,7 @@ import BrokerDashboard from './pages/BrokerDashboard';
 import ClientDashboard from './pages/ClientDashboard';
 import FinancialPortal from './pages/FinancialPortal';
 import BankPortal from './pages/BankPortal';
+import { useSessionSync } from './hooks/useSessionSync';
 
 // Client pages  
 import ClientHome from './pages/client/ClientHome';
@@ -55,6 +56,8 @@ import FinancialDashboard from './pages/financeira/FinancialDashboard';
 import RatesConfiguration from './pages/bank/financing/RatesConfiguration';
 
 export default function App() {
+  useSessionSync();
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Routes>

@@ -10,6 +10,14 @@ Este projeto está configurado para fazer Single Sign-On automático com outros 
 
 3. **Limpeza da URL**: Após autenticar, os tokens são removidos da URL por segurança.
 
+4. **Sincronização Bidirecional**: Quando você faz login em qualquer projeto, as outras abas abertas detectam automaticamente através de:
+   - BroadcastChannel (mesmo domínio)
+   - Storage Events (mesmo domínio)
+   - Verificação periódica a cada 5 segundos
+   - Detecção quando a aba ganha foco
+
+5. **Persistência de Sessão**: Se você faz login no Projeto A e navega para o Projeto B, sua sessão é mantida. Se você voltar para o Projeto A (aba ainda aberta), a sessão é automaticamente atualizada.
+
 ## Como usar no Projeto A (para criar link para este Projeto B)
 
 ### Opção 1: Usar o componente SSOButton
@@ -126,6 +134,21 @@ function HomePage() {
 - O Supabase gerencia a expiração e renovação de tokens automaticamente
 - Apenas usuários com sessão válida podem gerar links SSO
 
+## Sincronização entre Projetos
+
+### Mesmo Domínio (ou Subdomínios)
+Se os projetos estão no mesmo domínio (ex: `app1.exemplo.com` e `app2.exemplo.com`):
+- Sincronização é **instantânea** através de BroadcastChannel e Storage Events
+- Login em um projeto atualiza imediatamente todas as abas abertas
+
+### Domínios Diferentes
+Se os projetos estão em domínios diferentes:
+- Sincronização acontece através de:
+  - Transferência de tokens durante navegação (instantâneo)
+  - Verificação periódica a cada 5 segundos
+  - Detecção quando você clica na aba
+- Pode haver delay de até 5 segundos para sincronizar
+
 ## Troubleshooting
 
 **Problema**: Login não funciona entre projetos
@@ -141,3 +164,9 @@ function HomePage() {
 - Verifique se o Supabase está configurado corretamente
 - Verifique se os tokens estão sendo passados corretamente na URL
 - Verifique se não há erro de CORS
+
+**Problema**: Sessão não sincroniza entre projetos
+- Se estão no mesmo domínio, verifique se o BroadcastChannel está funcionando
+- Se estão em domínios diferentes, espere até 5 segundos ou clique na aba para forçar sincronização
+- Verifique se ambos os projetos têm o `useSessionSync()` no App.tsx
+- Verifique se ambos têm a versão atualizada do código de sincronização
