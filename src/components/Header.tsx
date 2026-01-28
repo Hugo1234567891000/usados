@@ -66,22 +66,22 @@ export default function Header() {
             <img src="/trace (3) (2).svg" alt="Trace Imóveis" className="h-10 w-auto" />
           </Link>
           
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4 md:gap-8">
             <nav>
-              <ul className="flex items-center gap-8">
+              <ul className="flex items-center gap-4 md:gap-8">
                 <li>
                   <CrossProjectLink
                     href="https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--31fc58ec.local-credentialless.webcontainer-api.io/"
-                    className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+                    className="flex items-center gap-1 md:gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium"
                   >
                     <Building2 className="w-4 h-4" />
-                    Novos
+                    <span>Novos</span>
                   </CrossProjectLink>
                 </li>
                 <li><Link to="/" className="text-gray-600 hover:text-blue-600">Início</Link></li>
                 <li><Link to="/imoveis" className="text-gray-600 hover:text-blue-600">Imóveis</Link></li>
-                <li><Link to="/sobre" className="text-gray-600 hover:text-blue-600">Sobre</Link></li>
-                <li><Link to="/contato" className="text-gray-600 hover:text-blue-600">Contato</Link></li>
+                <li className="hidden md:block"><Link to="/sobre" className="text-gray-600 hover:text-blue-600">Sobre</Link></li>
+                <li className="hidden md:block"><Link to="/contato" className="text-gray-600 hover:text-blue-600">Contato</Link></li>
               </ul>
             </nav>
 

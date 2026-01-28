@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Home, Heart, Settings, LogOut, User, Bell } from 'lucide-react';
+import { Home, Heart, Settings, LogOut, User, Bell, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { CrossProjectLink } from '../components/CrossProjectLink';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -80,11 +81,18 @@ export default function ClientDashboard() {
       <nav className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-6">
               <Link to="/" className="flex items-center gap-2">
                 <Home className="h-8 w-8 text-blue-600" />
                 <span className="text-xl font-bold">VHGold Imóveis</span>
               </Link>
+              <CrossProjectLink
+                href="https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--31fc58ec.local-credentialless.webcontainer-api.io/"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                <Building2 className="w-5 h-5" />
+                <span>Novos</span>
+              </CrossProjectLink>
             </div>
             <div className="flex items-center gap-4">
               <div className="relative notifications-dropdown">
