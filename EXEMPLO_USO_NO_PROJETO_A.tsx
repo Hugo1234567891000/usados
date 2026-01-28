@@ -115,20 +115,105 @@ function HomePage() {
 }
 
 /**
- * CONFIGURAÇÃO NECESSÁRIA NO PROJETO A:
+ * CONFIGURAÇÃO NECESSÁRIA NO PROJETO A PARA SINCRONIZAÇÃO BIDIRECIONAL:
  *
  * 1. Copie os arquivos:
  *    - src/lib/sso.ts
  *    - src/components/SSOButton.tsx
+ *    - src/components/CrossProjectLink.tsx
+ *    - src/hooks/useSessionSync.ts
  *
- * 2. Atualize o AuthContext no Projeto A com o código de detecção de tokens:
- *    (veja o arquivo src/contexts/AuthContext.tsx deste projeto)
+ * 2. Atualize o AuthContext no Projeto A:
  *
- * 3. Use um dos exemplos acima onde você quiser adicionar navegação para o Projeto B
+ *    a) Adicione no useEffect que detecta tokens na URL (se ainda não tiver):
  *
- * 4. Ajuste a URL do Projeto B conforme necessário:
+ *    useEffect(() => {
+ *      const checkUrlToken = async () => {
+ *        const params = new URLSearchParams(window.location.search);
+ *        const accessToken = params.get('access_token');
+ *        const refreshToken = params.get('refresh_token');
+ *
+ *        if (accessToken && refreshToken) {
+ *          await supabase.auth.setSession({
+ *            access_token: accessToken,
+ *            refresh_token: refreshToken,
+ *          });
+ *          window.history.replaceState({}, document.title, window.location.pathname);
+ *        }
+ *      };
+ *      checkUrlToken();
+ *    }, []);
+ *
+ *    b) Atualize a função login para enviar mensagem de sincronização:
+ *
+ *    const login = useCallback(async (email: string, password: string) => {
+ *      const { data, error } = await supabase.auth.signInWithPassword({
+ *        email,
+ *        password,
+ *      });
+ *
+ *      if (error) throw new Error(error.message);
+ *
+ *      if (data.user) {
+ *        await loadProfile(data.user.id);
+ *        setShowAuthModal(false);
+ *
+ *        // ADICIONE ESTAS 3 LINHAS:
+ *        const channel = new BroadcastChannel('supabase-auth-sync');
+ *        channel.postMessage({ type: 'session-changed', event: 'SIGNED_IN' });
+ *        channel.close();
+ *
+ *        if (redirectAfterLogin) {
+ *          navigate(redirectAfterLogin);
+ *          setRedirectAfterLogin(null);
+ *        }
+ *      }
+ *    }, [redirectAfterLogin, navigate, loadProfile]);
+ *
+ *    c) Atualize a função logout para enviar mensagem de sincronização:
+ *
+ *    const logout = useCallback(async () => {
+ *      await supabase.auth.signOut();
+ *      setUser(null);
+ *      setProfile(null);
+ *      setSession(null);
+ *      setIsAuthenticated(false);
+ *
+ *      // ADICIONE ESTAS 3 LINHAS:
+ *      const channel = new BroadcastChannel('supabase-auth-sync');
+ *      channel.postMessage({ type: 'session-changed', event: 'SIGNED_OUT' });
+ *      channel.close();
+ *
+ *      navigate('/');
+ *    }, [navigate]);
+ *
+ * 3. Adicione o hook useSessionSync no App.tsx do Projeto A:
+ *
+ *    import { useSessionSync } from './hooks/useSessionSync';
+ *
+ *    export default function App() {
+ *      useSessionSync(); // Esta linha ativa a sincronização
+ *
+ *      return (
+ *        <Router>
+ *          // ... seu código
+ *        </Router>
+ *      );
+ *    }
+ *
+ * 4. Use um dos exemplos acima onde você quiser adicionar navegação para o Projeto B
+ *
+ * 5. Ajuste a URL do Projeto B conforme necessário:
  *    - Desenvolvimento: http://localhost:5174
  *    - Produção: https://seu-dominio-projeto-b.vercel.app
+ *
+ * COM ISSO CONFIGURADO:
+ * ✅ Login no Projeto A → sincroniza automaticamente no Projeto B
+ * ✅ Login no Projeto B → sincroniza automaticamente no Projeto A
+ * ✅ Logout no Projeto A → sincroniza automaticamente no Projeto B
+ * ✅ Logout no Projeto B → sincroniza automaticamente no Projeto A
+ * ✅ Navegação entre projetos mantém a sessão
+ * ✅ Funciona em múltiplas abas/janelas do mesmo navegador
  */
 
 export { NavigationButtons, PropertyTypeMenu, PropertyCategories, HomePage };
