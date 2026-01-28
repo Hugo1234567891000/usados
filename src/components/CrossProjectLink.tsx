@@ -17,9 +17,9 @@ export function CrossProjectLink({ href, children, className }: CrossProjectLink
       const url = new URL(href);
       url.searchParams.set('access_token', session.access_token);
       url.searchParams.set('refresh_token', session.refresh_token || '');
-      window.open(url.toString(), '_blank');
+      window.location.href = url.toString();
     } else {
-      window.open(href, '_blank');
+      window.location.href = href;
     }
   };
 
@@ -28,7 +28,6 @@ export function CrossProjectLink({ href, children, className }: CrossProjectLink
       href={href}
       onClick={handleClick}
       className={className}
-      rel="noopener noreferrer"
     >
       {children}
     </a>
