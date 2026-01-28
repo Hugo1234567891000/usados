@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
-export type NotificationType = 
-  | 'proposal_status' 
-  | 'payment_status' 
-  | 'contract_status' 
+export type NotificationType =
+  | 'proposal_status'
+  | 'payment_status'
+  | 'contract_status'
   | 'document_status'
   | 'system';
 
@@ -15,10 +17,18 @@ export interface AppNotification {
   message: string;
   timestamp: string;
   read: boolean;
-  entityId?: string; // ID of related entity (proposal, payment, contract, etc.)
+  entityId?: string;
   entityType?: string;
   actionUrl?: string;
   actionLabel?: string;
+}
+
+interface Profile {
+  id: string;
+  email: string;
+  full_name: string;
+  role: 'client' | 'broker' | 'developer' | 'bank' | 'admin';
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 interface AuthContextType {
@@ -34,6 +44,9 @@ interface AuthContextType {
     email: string;
     role: 'client' | 'broker' | 'developer' | 'bank' | 'admin';
   } | null;
+  profile: Profile | null;
+  session: Session | null;
+  loading: boolean;
   appNotifications: AppNotification[];
   addAppNotification: (notification: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
   markAppNotificationAsRead: (id: string) => void;
@@ -49,23 +62,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [redirectAfterLogin, setRedirectAfterLogin] = useState<string | null>(null);
   const [user, setUser] = useState<AuthContextType['user']>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
   const [appNotifications, setAppNotifications] = useState<AppNotification[]>([]);
 
-  // Check for existing session on mount
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Failed to parse stored user data', error);
-        localStorage.removeItem('user');
-      }
-    }
+  const loadProfile = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-    // Load saved notifications
+      if (error) throw error;
+
+      if (data) {
+        setProfile(data);
+        setUser({
+          name: data.full_name || data.email,
+          email: data.email,
+          role: data.role
+        });
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsAuthenticated(!!session);
+      if (session?.user) {
+        loadProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setIsAuthenticated(!!session);
+
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+      setLoading(false);
+    });
+
     const savedNotifications = localStorage.getItem('appNotifications');
     if (savedNotifications) {
       try {
@@ -74,9 +121,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to parse stored notifications', error);
       }
     }
-  }, []);
 
-  // Save notifications to localStorage when they change
+    return () => subscription.unsubscribe();
+  }, [loadProfile]);
+
   useEffect(() => {
     if (isAuthenticated && appNotifications.length > 0) {
       localStorage.setItem('appNotifications', JSON.stringify(appNotifications));
@@ -84,36 +132,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [appNotifications, isAuthenticated]);
 
   const login = useCallback(async (email: string, password: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    // Test credentials
-    if (email === 'cliente@teste.com' && password === '123456') {
-      const userData = {
-        name: 'João Silva',
-        email: 'cliente@teste.com',
-        role: 'client' as const
-      };
-      
-      // Store user data in localStorage for persistence
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      setUser(userData);
-      setIsAuthenticated(true);
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (data.user) {
+      await loadProfile(data.user.id);
       setShowAuthModal(false);
-      
+
       if (redirectAfterLogin) {
         navigate(redirectAfterLogin);
         setRedirectAfterLogin(null);
       }
-    } else {
-      throw new Error('Credenciais inválidas');
     }
-  }, [redirectAfterLogin, navigate]);
+  }, [redirectAfterLogin, navigate, loadProfile]);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('user');
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     setUser(null);
+    setProfile(null);
+    setSession(null);
     setIsAuthenticated(false);
     navigate('/');
   }, [navigate]);
@@ -130,15 +173,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const markAppNotificationAsRead = useCallback((id: string) => {
-    setAppNotifications(prev => 
-      prev.map(notification => 
+    setAppNotifications(prev =>
+      prev.map(notification =>
         notification.id === id ? { ...notification, read: true } : notification
       )
     );
   }, []);
 
   const markAllAppNotificationsAsRead = useCallback(() => {
-    setAppNotifications(prev => 
+    setAppNotifications(prev =>
       prev.map(notification => ({ ...notification, read: true }))
     );
   }, []);
@@ -158,6 +201,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       redirectAfterLogin,
       setRedirectAfterLogin,
       user,
+      profile,
+      session,
+      loading,
       appNotifications,
       addAppNotification,
       markAppNotificationAsRead,
