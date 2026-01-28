@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, User, Lock, Mail, X, LogOut, ChevronDown, Globe } from 'lucide-react';
+import { Home, User, Lock, Mail, X, LogOut, ChevronDown, Globe, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { CrossProjectLink } from './CrossProjectLink';
 
 export default function Header() {
   const navigate = useNavigate();
@@ -68,6 +69,15 @@ export default function Header() {
           <div className="flex items-center gap-8">
             <nav>
               <ul className="flex items-center gap-8">
+                <li>
+                  <CrossProjectLink
+                    href="http://localhost:5173"
+                    className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+                  >
+                    <Building2 className="w-4 h-4" />
+                    Novos
+                  </CrossProjectLink>
+                </li>
                 <li><Link to="/" className="text-gray-600 hover:text-blue-600">Início</Link></li>
                 <li><Link to="/imoveis" className="text-gray-600 hover:text-blue-600">Imóveis</Link></li>
                 <li><Link to="/sobre" className="text-gray-600 hover:text-blue-600">Sobre</Link></li>
