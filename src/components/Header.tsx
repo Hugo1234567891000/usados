@@ -71,7 +71,7 @@ export default function Header() {
               <ul className="flex items-center gap-8">
                 <li>
                   <CrossProjectLink
-                    href="http://localhost:5173"
+                    href="https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--31fc58ec.local-credentialless.webcontainer-api.io/"
                     className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
                   >
                     <Building2 className="w-4 h-4" />
